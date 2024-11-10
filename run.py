@@ -41,7 +41,7 @@ cytosolic_train_tokens = [tokenizer(s, return_tensors="pt") for s in cytosolic_t
 NUM_HIDDEN_LAYERS = 13
 
 membrane_train_hidden_states = dict()
-for membrane_example in membrane_train_tokens[:10]:
+for membrane_example in membrane_train_tokens[:100]:
     inputs = membrane_example
     inputs['output_hidden_states'] = True
     outputs = model.forward(**inputs)
@@ -51,13 +51,13 @@ for membrane_example in membrane_train_tokens[:10]:
         # we try mean pooling the hidden states (could also do max pooling, last token, etc)
         layer = layer.detach().numpy()
         layer = layer.mean(axis=1).squeeze(0)
-        print(layer.shape)
+        # print(layer.shape)
         # print(layer)
         
         membrane_train_hidden_states[i] = membrane_train_hidden_states.get(i, []) + [layer]
 
 cytosolic_train_hidden_states = dict()
-for cytosolic_example in cytosolic_train_tokens[:10]:
+for cytosolic_example in cytosolic_train_tokens[:100]:
     inputs = cytosolic_example
     inputs['output_hidden_states'] = True
     outputs = model.forward(**inputs)
@@ -75,7 +75,7 @@ for i in range(NUM_HIDDEN_LAYERS):
     all_layaer_hidden_states = np.array(membrane_train_hidden_states[i])
     sum_hidden_states = np.sum(all_layaer_hidden_states, axis=0)
     avg_hidden_states = sum_hidden_states / len(membrane_train_hidden_states[i])
-    print(avg_hidden_states)
+    # print(avg_hidden_states)
     membrane_train_avg_hidden_states[i] = avg_hidden_states
 
     # cytosolic avgs
@@ -96,13 +96,68 @@ import json
 for k, v in steering_vectors.items():
     steering_vectors[k] = v.tolist()
 
-
 with open("steering_vectors.json", "w") as f:
     json.dump(steering_vectors, f)
 
 # function to project a vector onto the steering vector (scalar prediction where the function returns a scalar)
 def project_vector(vector, steering_vector):
     return np.dot(vector, steering_vector) / np.linalg.norm(steering_vector)
+
+
+# test steering vector prediction
+# -------------------------------
+
+SIMILARITY_THRESHOLD = 0.5
+
+membrane_test_tokens = [tokenizer(s, return_tensors="pt") for s in membrane_test]
+cytosolic_test_tokens = [tokenizer(s, return_tensors="pt") for s in cytosolic_test]
+
+membrane_test_hidden_states = dict()
+for membrane_example in membrane_test_tokens[:100]:
+    inputs = membrane_example
+    inputs['output_hidden_states'] = True
+    outputs = model.forward(**inputs)
+
+    for i, layer in enumerate(outputs.hidden_states):
+        layer = layer.detach().numpy()
+        layer = layer.mean(axis=1).squeeze(0)
+        membrane_test_hidden_states[i] = membrane_test_hidden_states.get(i, []) + [layer]
+
+cytosolic_test_hidden_states = dict()
+for cytosolic_example in cytosolic_test_tokens[:100]:
+    inputs = cytosolic_example
+    inputs['output_hidden_states'] = True
+    outputs = model.forward(**inputs)
+
+    for i, layer in enumerate(outputs.hidden_states):
+        layer = layer.detach().numpy()
+        layer = layer.mean(axis=1).squeeze(0)
+        cytosolic_test_hidden_states[i] = cytosolic_test_hidden_states.get(i, []) + [layer]
+
+STEERING_VECTOR_LAYER_NUMBER = 6
+
+# for each test example, project the hidden states onto the steering vector
+membrane_predictions = []
+cytosolic_predictions = []
+
+membrane_example = membrane_test_hidden_states[STEERING_VECTOR_LAYER_NUMBER]
+cytosolic_example = cytosolic_test_hidden_states[STEERING_VECTOR_LAYER_NUMBER]
+for i in range(100):
+    membrane_hidden_state = membrane_example[i]
+    cytosolic_hidden_state = cytosolic_example[i]
+
+    membrane_projection = project_vector(membrane_hidden_state, steering_vectors[STEERING_VECTOR_LAYER_NUMBER])
+    cytosolic_projection = project_vector(cytosolic_hidden_state, steering_vectors[STEERING_VECTOR_LAYER_NUMBER])
+
+    membrane_predictions.append(membrane_projection)
+    cytosolic_predictions.append(cytosolic_projection)
+    
+# calculate the number of correct predictions
+membrane_correct = sum([1 for p in membrane_predictions if p > SIMILARITY_THRESHOLD])
+cytosolic_correct = sum([1 for p in cytosolic_predictions if p < SIMILARITY_THRESHOLD])
+
+print(f"Membrane correct: {membrane_correct} / {len(membrane_predictions)}")
+print(f"Cytosolic correct: {cytosolic_correct} / {len(cytosolic_predictions)}")
 
 
 
