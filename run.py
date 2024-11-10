@@ -8,8 +8,8 @@ import json
 
 # load model and tokenizer
 # ------------------------
-tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t12_35M_UR50D")
-model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t12_35M_UR50D")
+tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t6_8M_UR50D")
+model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t6_8M_UR50D")
 
 
 # load sample dataset
@@ -39,7 +39,7 @@ cytosolic_train_tokens = [tokenizer(s, return_tensors="pt") for s in cytosolic_t
 
 # average hidden layer states
 # -------------------
-NUM_HIDDEN_LAYERS = 13
+NUM_HIDDEN_LAYERS = 6
 
 membrane_train_hidden_states = dict()
 for membrane_example in membrane_train_tokens[:100]: # first 100 examples
@@ -128,7 +128,7 @@ for cytosolic_example in cytosolic_test_tokens: # run on all test examples
         layer = layer.mean(axis=1).squeeze(0)
         cytosolic_test_hidden_states[i] = cytosolic_test_hidden_states.get(i, []) + [layer]
 
-STEERING_VECTOR_LAYER_NUMBER = 6
+STEERING_VECTOR_LAYER_NUMBER = 3
 
 # for each test example, project the hidden states onto the steering vector
 membrane_predictions = []
