@@ -4,6 +4,7 @@ from io import BytesIO
 import pandas
 from sklearn.model_selection import train_test_split
 import numpy as np
+import json
 
 # load model and tokenizer
 # ------------------------
@@ -13,7 +14,7 @@ model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t12_35M_UR50D")
 
 # load sample dataset
 # -------------------
-# Use this souce as a reference: https://colab.research.google.com/github/huggingface/notebooks/blob/main/examples/protein_language_modeling.ipynb#scrollTo=c718ffbc
+# Use this souce as a reference for lines (18-37): https://colab.research.google.com/github/huggingface/notebooks/blob/main/examples/protein_language_modeling.ipynb#scrollTo=c718ffbc
 query_url ="https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Csequence%2Ccc_subcellular_location&format=tsv&query=%28%28organism_id%3A9606%29%20AND%20%28reviewed%3Atrue%29%20AND%20%28length%3A%5B80%20TO%20500%5D%29%29"
 uniprot_request = requests.get(query_url)
 bio = BytesIO(uniprot_request.content)
@@ -41,29 +42,26 @@ cytosolic_train_tokens = [tokenizer(s, return_tensors="pt") for s in cytosolic_t
 NUM_HIDDEN_LAYERS = 13
 
 membrane_train_hidden_states = dict()
-for membrane_example in membrane_train_tokens[:100]:
+for membrane_example in membrane_train_tokens[:100]: # first 100 examples
     inputs = membrane_example
     inputs['output_hidden_states'] = True
     outputs = model.forward(**inputs)
 
     for i, layer in enumerate(outputs.hidden_states):
-        # print(i, "->", layer.shape)
-        # we try mean pooling the hidden states (could also do max pooling, last token, etc)
         layer = layer.detach().numpy()
+        # we try mean pooling the hidden states (could also do max pooling, last token, etc)
         layer = layer.mean(axis=1).squeeze(0)
-        # print(layer.shape)
-        # print(layer)
-        
         membrane_train_hidden_states[i] = membrane_train_hidden_states.get(i, []) + [layer]
 
 cytosolic_train_hidden_states = dict()
-for cytosolic_example in cytosolic_train_tokens[:100]:
+for cytosolic_example in cytosolic_train_tokens[:100]: # first 100 examples
     inputs = cytosolic_example
     inputs['output_hidden_states'] = True
     outputs = model.forward(**inputs)
 
     for i, layer in enumerate(outputs.hidden_states):
         layer = layer.detach().numpy()
+        # we try mean pooling the hidden states (could also do max pooling, last token, etc)
         layer = layer.mean(axis=1).squeeze(0)
         cytosolic_train_hidden_states[i] = cytosolic_train_hidden_states.get(i, []) + [layer]
 
@@ -75,7 +73,6 @@ for i in range(NUM_HIDDEN_LAYERS):
     all_layaer_hidden_states = np.array(membrane_train_hidden_states[i])
     sum_hidden_states = np.sum(all_layaer_hidden_states, axis=0)
     avg_hidden_states = sum_hidden_states / len(membrane_train_hidden_states[i])
-    # print(avg_hidden_states)
     membrane_train_avg_hidden_states[i] = avg_hidden_states
 
     # cytosolic avgs
@@ -89,9 +86,9 @@ for i in range(NUM_HIDDEN_LAYERS):
     # this encode the difference between membrane and cytosolic hidden states
     steering_vectors[i] = membrane_train_avg_hidden_states[i] - cytosolic_train_avg_hidden_states[i]
 
-# write steering vectors to file as json
-import json
 
+# write steering vectors to file as json
+# --------------------------------------
 #make steering vectors JSON serializable
 for k, v in steering_vectors.items():
     steering_vectors[k] = v.tolist()
@@ -99,21 +96,18 @@ for k, v in steering_vectors.items():
 with open("steering_vectors.json", "w") as f:
     json.dump(steering_vectors, f)
 
-# function to project a vector onto the steering vector (scalar prediction where the function returns a scalar)
-def project_vector(vector, steering_vector):
-    return np.dot(vector, steering_vector) / np.linalg.norm(steering_vector)
+
 
 
 # test steering vector prediction
 # -------------------------------
-
 SIMILARITY_THRESHOLD = 0.5
 
 membrane_test_tokens = [tokenizer(s, return_tensors="pt") for s in membrane_test]
 cytosolic_test_tokens = [tokenizer(s, return_tensors="pt") for s in cytosolic_test]
 
 membrane_test_hidden_states = dict()
-for membrane_example in membrane_test_tokens[:100]:
+for membrane_example in membrane_test_tokens: # run on all test examples
     inputs = membrane_example
     inputs['output_hidden_states'] = True
     outputs = model.forward(**inputs)
@@ -124,7 +118,7 @@ for membrane_example in membrane_test_tokens[:100]:
         membrane_test_hidden_states[i] = membrane_test_hidden_states.get(i, []) + [layer]
 
 cytosolic_test_hidden_states = dict()
-for cytosolic_example in cytosolic_test_tokens[:100]:
+for cytosolic_example in cytosolic_test_tokens: # run on all test examples
     inputs = cytosolic_example
     inputs['output_hidden_states'] = True
     outputs = model.forward(**inputs)
@@ -140,18 +134,26 @@ STEERING_VECTOR_LAYER_NUMBER = 6
 membrane_predictions = []
 cytosolic_predictions = []
 
+# function to project a vector onto the steering vector (scalar projection)
+def project_vector(vector, steering_vector):
+    return np.dot(vector, steering_vector) / np.linalg.norm(steering_vector)
+
 membrane_example = membrane_test_hidden_states[STEERING_VECTOR_LAYER_NUMBER]
 cytosolic_example = cytosolic_test_hidden_states[STEERING_VECTOR_LAYER_NUMBER]
-for i in range(100):
+
+
+# test on full dataset of membrane and cytosolic examples
+# -------------------------------------------------------
+for i in range(len(membrane_example)):
     membrane_hidden_state = membrane_example[i]
-    cytosolic_hidden_state = cytosolic_example[i]
-
     membrane_projection = project_vector(membrane_hidden_state, steering_vectors[STEERING_VECTOR_LAYER_NUMBER])
-    cytosolic_projection = project_vector(cytosolic_hidden_state, steering_vectors[STEERING_VECTOR_LAYER_NUMBER])
-
     membrane_predictions.append(membrane_projection)
+
+for i in range(len(cytosolic_example)):
+    cytosolic_hidden_state = cytosolic_example[i]
+    cytosolic_projection = project_vector(cytosolic_hidden_state, steering_vectors[STEERING_VECTOR_LAYER_NUMBER])
     cytosolic_predictions.append(cytosolic_projection)
-    
+
 # calculate the number of correct predictions
 membrane_correct = sum([1 for p in membrane_predictions if p > SIMILARITY_THRESHOLD])
 cytosolic_correct = sum([1 for p in cytosolic_predictions if p < SIMILARITY_THRESHOLD])
@@ -159,17 +161,13 @@ cytosolic_correct = sum([1 for p in cytosolic_predictions if p < SIMILARITY_THRE
 print(f"Membrane correct: {membrane_correct} / {len(membrane_predictions)}")
 print(f"Cytosolic correct: {cytosolic_correct} / {len(cytosolic_predictions)}")
 
+# print the accuracy
+accuracy = (membrane_correct + cytosolic_correct) / (len(membrane_predictions) + len(cytosolic_predictions))
+print(f"Accuracy: {accuracy}")
 
+# print accuracy for just membrane and just cytosolic
+membrane_accuracy = membrane_correct / len(membrane_predictions)
+cytosolic_accuracy = cytosolic_correct / len(cytosolic_predictions)
+print(f"Membrane accuracy: {membrane_accuracy}")
+print(f"Cytosolic accuracy: {cytosolic_accuracy}")
 
-
-
-
-
-# print(outputs.hidden_states[0].shape)
-# print()
-# print(outputs.hidden_states[1].shape)
-# print(outputs.hidden_states[2].shape)
-# print(outputs.hidden_states[3].shape)
-
-# print(len(outputs.hidden_states))
-# print(outputs.hidden_states)
