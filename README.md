@@ -1,5 +1,7 @@
 # Alt Protein Computational Track Proposal Code
 
+## NOTE: code has been temporarily modified from the 35 million parameter model to the 8 million for testing.
+
 Steps to take after cloning:
 
 1. Run the following command:
