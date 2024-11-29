@@ -1,0 +1,142 @@
+
+================================================================================
+Loading model and tokenizer...
+Loading and preprocessing data...
+
+================================================================================
+Analysis Parameters:
+Number of layers: 13
+Pooling strategies: mean, max, min, first, last
+Training samples per class: 200
+================================================================================
+
+
+Detailed Results:
+--------------------------------------------------------------------------------
+Layer  Pooling  Accuracy  
+--------------------------------------------------------------------------------
+0      mean     0.8325
+0      max      0.5350
+0      min      0.5350
+/Users/zephaniahroe/Desktop/AI FOR GOOD/altprotein/alt-protein-computational/plot_layer_and_pooling_results.py:34: RuntimeWarning: invalid value encountered in scalar divide
+  return np.dot(vector, steering_vector) / np.linalg.norm(steering_vector)
+0      first    0.5000
+/Users/zephaniahroe/Desktop/AI FOR GOOD/altprotein/alt-protein-computational/plot_layer_and_pooling_results.py:34: RuntimeWarning: invalid value encountered in scalar divide
+  return np.dot(vector, steering_vector) / np.linalg.norm(steering_vector)
+0      last     0.5000
+Layer 0 best: mean (0.8325)
+--------------------------------------------------------------------------------
+1      mean     0.7650
+1      max      0.7725
+1      min      0.7975
+1      first    0.7950
+1      last     0.7825
+Layer 1 best: min (0.7975)
+--------------------------------------------------------------------------------
+2      mean     0.7975
+2      max      0.8725
+2      min      0.8425
+2      first    0.8850
+2      last     0.8825
+Layer 2 best: first (0.8850)
+--------------------------------------------------------------------------------
+3      mean     0.8200
+3      max      0.9000
+3      min      0.9050
+3      first    0.9100
+3      last     0.9200
+Layer 3 best: last (0.9200)
+--------------------------------------------------------------------------------
+4      mean     0.7975
+4      max      0.7825
+4      min      0.8250
+4      first    0.9175
+4      last     0.9050
+Layer 4 best: first (0.9175)
+--------------------------------------------------------------------------------
+5      mean     0.8025
+5      max      0.7575
+5      min      0.7550
+5      first    0.8900
+5      last     0.8775
+Layer 5 best: first (0.8900)
+--------------------------------------------------------------------------------
+6      mean     0.8300
+6      max      0.7325
+6      min      0.7100
+6      first    0.9025
+6      last     0.8700
+Layer 6 best: first (0.9025)
+--------------------------------------------------------------------------------
+7      mean     0.8650
+7      max      0.7175
+7      min      0.7100
+7      first    0.8750
+7      last     0.8925
+Layer 7 best: last (0.8925)
+--------------------------------------------------------------------------------
+8      mean     0.9025
+8      max      0.7400
+8      min      0.7325
+8      first    0.8850
+8      last     0.8900
+Layer 8 best: mean (0.9025)
+--------------------------------------------------------------------------------
+9      mean     0.9075
+9      max      0.7425
+9      min      0.7425
+9      first    0.8550
+9      last     0.8850
+Layer 9 best: mean (0.9075)
+--------------------------------------------------------------------------------
+10     mean     0.8925
+10     max      0.7400
+10     min      0.7450
+10     first    0.8525
+10     last     0.8675
+Layer 10 best: mean (0.8925)
+--------------------------------------------------------------------------------
+11     mean     0.8900
+11     max      0.7400
+11     min      0.7425
+11     first    0.8500
+11     last     0.8500
+Layer 11 best: mean (0.8900)
+--------------------------------------------------------------------------------
+12     mean     0.7875
+12     max      0.7225
+12     min      0.6800
+12     first    0.8225
+12     last     0.8050
+Layer 12 best: first (0.8225)
+--------------------------------------------------------------------------------
+
+Generating plots...
+
+================================================================================
+Overall Best Combinations:
+----------------------------------------
+1. Layer 3  with last  pooling: 0.9200
+2. Layer 4  with first pooling: 0.9175
+3. Layer 3  with first pooling: 0.9100
+
+Pooling Strategy Summaries:
+----------------------------------------
+mean  pooling:
+  Average accuracy: 0.8377
+  Best layer: 9 (0.9075)
+max   pooling:
+  Average accuracy: 0.7504
+  Best layer: 3 (0.9000)
+min   pooling:
+  Average accuracy: 0.7479
+  Best layer: 3 (0.9050)
+first pooling:
+  Average accuracy: 0.8415
+  Best layer: 4 (0.9175)
+last  pooling:
+  Average accuracy: 0.8406
+  Best layer: 3 (0.9200)
+
+Analysis complete! Plots have been saved as 'layer_pooling_heatmap.png' and 'layer_pooling_lines.png'
+================================================================================
