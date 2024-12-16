@@ -26,10 +26,10 @@ cytosolic_df = df[cytosolic & ~membrane]
 membrane_sequences = membrane_df["Sequence"].tolist()
 cytosolic_sequences = cytosolic_df["Sequence"].tolist()
 
-membrane_train, membrane_test = train_test_split(membrane_sequences, test_size=0.2, random_state=43)
-cytosolic_train, cytosolic_test = train_test_split(cytosolic_sequences, test_size=0.2, random_state=43)
-membrane_train = membrane_train[:100]
-cytosolic_train = cytosolic_train[:100]
+membrane_train, membrane_test = train_test_split(membrane_sequences, test_size=0.2, random_state=42)
+cytosolic_train, cytosolic_test = train_test_split(cytosolic_sequences, test_size=0.2, random_state=42)
+membrane_train = membrane_train[:200]
+cytosolic_train = cytosolic_train[:200]
 
 print(f"Processing training data: {len(membrane_train)} membrane sequences and {len(cytosolic_train)} cytosolic sequences")
 
@@ -49,7 +49,7 @@ for i, membrane_example in enumerate(membrane_train_tokens):
 
     for i, layer in enumerate(outputs.hidden_states):
         layer = layer.detach().numpy()
-        layer = layer.mean(axis=1).squeeze(0)
+        layer = layer[:, -1, :].squeeze(0) # Use last token based on previous analysis
         membrane_train_hidden_states[i] = membrane_train_hidden_states.get(i, []) + [layer]
 
 print("Calculating hidden states for cytosolic training proteins...")
@@ -63,11 +63,11 @@ for i, cytosolic_example in enumerate(cytosolic_train_tokens):
 
     for i, layer in enumerate(outputs.hidden_states):
         layer = layer.detach().numpy()
-        layer = layer.mean(axis=1).squeeze(0)
+        layer = layer[:, -1, :].squeeze(0) # Use last token based on previous analysis
         cytosolic_train_hidden_states[i] = cytosolic_train_hidden_states.get(i, []) + [layer]
 
 print("Computing steering vectors...")
-STEERING_VECTOR_LAYER_NUMBER = 6
+STEERING_VECTOR_LAYER_NUMBER = 3
 membrane_train_avg_hidden_states = np.array(membrane_train_hidden_states[STEERING_VECTOR_LAYER_NUMBER])
 membrane_train_avg_hidden_states = np.sum(membrane_train_avg_hidden_states, axis=0) / len(membrane_train_hidden_states[STEERING_VECTOR_LAYER_NUMBER])
 cytosolic_train_avg_hidden_states = np.array(cytosolic_train_hidden_states[STEERING_VECTOR_LAYER_NUMBER])
@@ -76,7 +76,6 @@ cytosolic_train_avg_hidden_states = np.sum(cytosolic_train_avg_hidden_states, ax
 final_steering_vector = membrane_train_avg_hidden_states - cytosolic_train_avg_hidden_states
 
 # Calculate training projections to determine threshold
-STEERING_VECTOR_LAYER_NUMBER = 6
 print("Calculating training projections to determine optimal threshold...")
 
 def project_vector(vector, steering_vector):
@@ -141,7 +140,7 @@ for membrane_example in membrane_test_tokens:
 
     for i, layer in enumerate(outputs.hidden_states):
         layer = layer.detach().numpy()
-        layer = layer.mean(axis=1).squeeze(0)
+        layer = layer[:, -1, :].squeeze(0) # Use last token based on previous analysis
         membrane_test_hidden_states[i] = membrane_test_hidden_states.get(i, []) + [layer]
 
 cytosolic_test_hidden_states = dict()
@@ -152,7 +151,7 @@ for cytosolic_example in cytosolic_test_tokens:
 
     for i, layer in enumerate(outputs.hidden_states):
         layer = layer.detach().numpy()
-        layer = layer.mean(axis=1).squeeze(0)
+        layer = layer[:, -1, :].squeeze(0) # Use last token based on previous analysis
         cytosolic_test_hidden_states[i] = cytosolic_test_hidden_states.get(i, []) + [layer]
 
 print("Making final predictions...")
