@@ -1,22 +1,12 @@
 # Alt Protein Computational Track Proposal Code
 
-## Running the 8 million parameter model:
-The 8 million parameter model is pushed as part of the codebase temporarily so there is no need to download the model via hugging face.
-1. Switch to the branch where the 8 million parameter model is already uploaded:
-   ```
-   run-8-million
-   ```
-3. Just install the required packages:
-   ```
-   pip install -r requirements.txt
-   ```
-4. Then run the code:
-   ```
-   python3 run.py
-   ```
-## Running the 35 million parameter model:
+## Summary:
+1. `run.py`: run the most recent interation of our code (~90% accuracy)
+2. `experiments`: experiments to learn which training procedures are most effective. (Note that all experiments rely on using test data to learn the threshold perameter to better isolate the variables we are testing for; this would obviously not be possible in a real world setting because we wouldn't have labels.)
+3. `figures`: graphs and tables produced by the experiments.
+4. `final_steering_vector.json`: the final steering vector (you can think of this as a learned model) produced by run.py
 
-Steps to take after cloning:
+## Steps to take after cloning
 
 1. Run the following command:
    
