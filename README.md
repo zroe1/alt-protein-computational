@@ -1,4 +1,4 @@
-# Alt Protein Computational Track Proposal Code
+# Steering Vectors for Low-Data Protein Classification
 
 This project introduces a novel approach to protein classification using steering vectors derived from protein language models. By computing directional vectors in the model's hidden space that distinguish between different protein properties (such as membrane vs. cytosolic proteins), the framework achieves high accuracy with minimal training data. The implementation demonstrates this technique using the ESM-2 protein language model, achieving approximately 90% accuracy in protein localization classification with only 200 training examples per class. This proof-of-concept shows promise for efficiently analyzing and classifying proteins for various applications in biotechnology and alternative protein development.
 
