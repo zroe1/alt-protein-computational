@@ -11,6 +11,7 @@ print("Loading model and tokenizer...")
 tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t12_35M_UR50D")
 model = AutoModelForMaskedLM.from_pretrained("facebook/esm2_t12_35M_UR50D")
 
+# Lines 14-31 were written with minimal changes from: https://colab.research.google.com/github/huggingface/notebooks/blob/main/examples/protein_language_modeling.ipynb#scrollTo=c718ffbc
 print("Downloading and processing UniProt dataset...")
 query_url ="https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Csequence%2Ccc_subcellular_location&format=tsv&query=%28%28organism_id%3A9606%29%20AND%20%28reviewed%3Atrue%29%20AND%20%28length%3A%5B80%20TO%20500%5D%29%29"
 uniprot_request = requests.get(query_url)
