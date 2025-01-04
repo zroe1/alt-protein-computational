@@ -8,6 +8,68 @@ This project introduces a novel approach to protein classification using steerin
 3. `figures`: graphs and tables produced by the experiments.
 4. `final_steering_vector.json`: the final steering vector (you can think of this as a learned model) produced by run.py
 
+## Methods
+The protein classification framework uses steering vectors derived from ESM-2, a protein language model, to distinguish between membrane and cytosolic proteins. The method consists of the following key steps:
+
+### Data Collection and Preprocessing
+
+Protein sequences are retrieved from UniProt, filtering for human proteins (organism ID: 9606) that have lengths between 80-500 amino acids. Sequences are categorized into two classes:
+
+1. Membrane proteins: Those annotated with "Membrane" or "Cell membrane" locations
+2. Cytosolic proteins: Those annotated with "Cytosol" or "Cytoplasm" locations
+
+
+
+
+### Hidden State Extraction
+
+200 sequences per class are used for training.
+
+1. Each protein sequence is tokenized using the ESM-2 tokenizer
+2. The sequences are processed through the ESM-2 T12 35M model (35 million parameters)
+3. Hidden states are extracted from all 13 layers of the model
+4. The final token's hidden state representation is used for each sequence
+
+### Steering Vector Computation
+
+For a selected layer (layer 3 in the implementation), the average hidden state is computed for each class:
+
+Membrane protein vector: mean of all membrane protein hidden states
+Cytosolic protein vector: mean of all cytosolic protein hidden states
+
+The steering vector is calculated as the difference between these averages:
+
+```python
+final_steering_vector = membrane_train_avg_hidden_states - cytosolic_train_avg_hidden_states
+```
+
+
+### Classification Procedure
+
+Next, an optimal classification threshold is determined using the training data.
+
+For each protein in the validation set, the protien is sent through the model and the vector at the selected layer of the model is extracted. A projection score is calculated by projecting this hidden state onto the steering vector using a scalar projection:
+
+```python
+def project_vector(vector, steering_vector):
+    return np.dot(vector, steering_vector) / np.linalg.norm(steering_vector)
+```
+
+Proteins are classified based on their projection scores:
+
+* Scores above threshold → Membrane protein
+* Scores below threshold → Cytosolic protein
+
+### Model Evaluation
+
+The classifier is evaluated on a held-out test set of membrane and cytosolic proteins. Performance metrics include:
+
+1. Overall accuracy
+2. Per-class accuracy
+3. Average projection values for each class (for debugging purposes)
+
+The steering vector is saved to final_steering_vector.json for future use in protein classification tasks.
+
 ## Steps to take after cloning
 
 1. Run the following command:
